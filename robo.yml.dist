@@ -1,0 +1,6 @@
+site:
+  grunt_path: # Leave blank if no grunt.
+  root_path: web/
+pantheon:
+  site_name:
+  env: live
