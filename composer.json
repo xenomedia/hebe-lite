@@ -84,7 +84,7 @@
       ],
       "export-configuration": "drush config-export --yes"
     },
-    "drupal-scaffold": {
+    "drupal-scaffold": [{
       "source": "https://raw.githubusercontent.com/pantheon-systems/drops-8/{version}/{path}",
       "includes": [
         "sites/default/default.services.pantheon.preproduction.yml",
@@ -98,14 +98,16 @@
         ".htaccess",
         "web.config"
       ]
-    }
+    }, {
+    "source": "https://raw.githubusercontent.com/pantheon-systems/drops-8/{version}/{path}",
+    "includes": [
+      "yarn.lock"
+    ]
+    }]
   },
   "config": {
     "optimize-autoloader": true,
     "preferred-install": "dist",
-    "sort-packages": true,
-    "platform": {
-      "php": "7.0"
-    }
+    "sort-packages": true
   }
 }
