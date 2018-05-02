@@ -8,7 +8,7 @@ This repository is a start state for a Composer-based Drupal workflow with Panth
 
 Start off by creating a new Drupal 8 site; then, before installing Drupal, set your site to git mode and do the following from your local machine:
 ```
-$ composer create-project xenomedia/hebe-lite:dev-pantheon my-site
+$ composer create-project xenomedia/hebe-lite my-site
 $ cd my-site
 $ composer prepare-for-pantheon
 $ git init
