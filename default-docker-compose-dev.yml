@@ -1,6 +1,10 @@
 version: "2"
 
 services:
+  mariadb:
+    ports:
+      - 32800:3306 # choose port that does not conflict locally. X:3306
+
   php:
     environment:
       PHP_XDEBUG: 1

@@ -1,0 +1,102 @@
+#!groovy​
+// Include Xeno Global Library
+@Library('XENO_JENKINS') _
+def getLabel() {
+    // Which server to run this on.
+    return "php7b"
+}
+// Choose the site name based on git name and if it is a Pull Request or branch.
+def getSitename() {
+    // Set the project name, most likely the git repo name.
+    if (env.CHANGE_BRANCH && !env.CHANGE_FORK){
+        return "${env.CHANGE_BRANCH.toLowerCase()}"
+    }
+    else{
+        return "${env.BRANCH_NAME.toLowerCase()}"
+    }
+}
+
+def projectName() {
+    return "SITENAME"
+}
+
+def getSlackname() {
+    return sh (
+          script: 'git --no-pager show -s --format=%ae',
+          returnStdout: true
+    ).trim()
+}
+
+pipeline {
+  environment {
+    X_SLACK_NOTIFY = "<@here>"
+    // Slack Channel
+    X_SLACK_CHANNEL = "#other-deploys"
+    // Code paths for phpcs checks, space delimited
+    X_CODE = "web/sites/all/custom/"
+    // Code paths for phpcs ignore, comma delimited
+    X_IGNORE = "*css"
+  }
+  agent {
+    node {
+      label "${getLabel()}"
+      customWorkspace "/var/build/${projectName()}-${getSitename()}"
+    }
+  }
+  options {
+    // do not run more than one build per branch
+      disableConcurrentBuilds()
+    // lock based on branch name, pull requests use branch name
+      // lock resource: "${getSitename()}"
+      lock(resource: "${projectName()}", inversePrecedence: true)
+    // timeout after 1 hours
+      timeout(time: 1, unit: 'HOURS')
+    // keep 7 jobs
+      buildDiscarder(logRotator(numToKeepStr: '7'))
+  }
+  stages {
+    stage("Setup") {
+        when {
+              not { branch 'master' }
+        }
+      steps {
+          xenoBuildPantheon( "${projectName()}", "${getSitename()}")
+          sh """
+          terminus connection:set ${projectName()}.${getSitename()} sftp
+          terminus remote:drush ${projectName()}.${getSitename()} -- updb -y
+          terminus remote:drush ${projectName()}.${getSitename()} -- cim -y
+          """
+      }
+    }
+    // stage('Behat') {
+    //   when {
+    //     expression { env.CHANGE_TARGET == 'master' }
+    //   }
+    //   steps {
+    //     echo 'Behat Check'
+    //     // behatPantheon("${projectName()}", "${getSitename()}")
+    //   }
+    // }
+    stage ('Deploy Code') {
+        when {
+            branch 'master'
+        }
+        steps {
+          script {
+            slackNotify("${X_SLACK_NOTIFY}\nChanges going live, this process can take up to 10 min based on the queue.\nhttps://live-${projectName()}.pantheonsite.io\nCompletion can be find in #jenkins-ci", "${X_SLACK_CHANNEL}", 'good', "${X_SLACK_NOTIFY}", "${getSlackname()}")
+          }
+        }
+    }
+  }
+  post {
+    success {
+       slackNotify("Build Compete. https://${getSitename()}-${projectName()}.pantheonsite.io", "${X_SLACK_CHANNEL}", 'good', "${X_SLACK_NOTIFY}", "${getSlackname()}")
+    }
+    failure {
+       slackNotify("${X_SLACK_NOTIFY}\nBuild Failed. https://${getSitename()}-${projectName()}.pantheonsite.io", "${X_SLACK_CHANNEL}", 'danger', "${X_SLACK_NOTIFY}", "${getSlackname()}")
+    }
+    unstable {
+       slackNotify("${X_SLACK_NOTIFY}\nBuild is unstable. https://${getSitename()}-${projectName()}.pantheonsite.io", "${X_SLACK_CHANNEL}", 'warning', "${X_SLACK_NOTIFY}", "${getSlackname()}")
+    }
+  }
+}

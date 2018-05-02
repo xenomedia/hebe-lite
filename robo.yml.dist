@@ -4,3 +4,7 @@ site:
 pantheon:
   site_name:
   env: live
+database:
+  database: drupal
+  user: drupal
+  password: drupal

@@ -6,10 +6,12 @@ services:
     #ports:
     #  - 32749:3306 # choose port that does not conflict locally. X:3306
     environment:
-      MYSQL_ROOT_PASSWORD: password
-      MYSQL_DATABASE: drupal
-      MYSQL_USER: drupal
-      MYSQL_PASSWORD: drupal
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${DATABASE_NAME}
+      MYSQL_USER: ${DATABASE_USER}
+      MYSQL_PASSWORD: ${DATABASE_PASSWORD}
+    volumes:
+      - ./mariadb-init:/docker-entrypoint-initdb.d # Place init .sql file(s) here.
 
   php:
     image: wodby/drupal-php:7.0-3.3.1
@@ -22,7 +24,7 @@ services:
       PHP_XDEBUG_REMOTE_CONNECT_BACK: 0         # This is needed to respect remote.host setting bellow
       PHP_XDEBUG_REMOTE_HOST: "10.254.254.254"  # You will also need to 'sudo ifconfig lo0 alias 10.254.254.254'
     volumes:
-      - ${SITENAME}-sync:/var/www/html:cached
+     - ./:/var/www/html:cached # Docker-sync for macOS users
 
   nginx:
     image: wodby/drupal-nginx:8-1.13-3.0.2
