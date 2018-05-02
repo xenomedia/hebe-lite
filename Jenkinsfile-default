@@ -3,7 +3,7 @@
 @Library('XENO_JENKINS') _
 def getLabel() {
     // Which server to run this on.
-    return "php7b"
+    return "php[5,7][a-d]"
 }
 // Choose the site name based on git name and if it is a Pull Request or branch.
 def getSitename() {
@@ -26,77 +26,123 @@ def getSlackname() {
           returnStdout: true
     ).trim()
 }
-
 pipeline {
   environment {
+    // Database backup name
+    X_DB_BACKUP = "SITENAME.sql.gz"
+    // Database User to use on the testing server
+    X_DB_USER = "SITENAME"
+    // The live URL, used for stage file proxy and WP find-replace
+    X_LIVE_DOMAIN = "https://SITENAME.com"
+    // Slack IDs for notification.
     X_SLACK_NOTIFY = "<@here>"
     // Slack Channel
     X_SLACK_CHANNEL = "#other-deploys"
     // Code paths for phpcs checks, space delimited
-    X_CODE = "web/sites/all/custom/"
+    X_CODE = "web/modules/custom/"
     // Code paths for phpcs ignore, comma delimited
     X_IGNORE = "*css"
   }
   agent {
     node {
       label "${getLabel()}"
-      customWorkspace "/var/build/${projectName()}-${getSitename()}"
+      customWorkspace "/var/www/${getSitename()}"
     }
   }
   options {
     // do not run more than one build per branch
       disableConcurrentBuilds()
     // lock based on branch name, pull requests use branch name
-      // lock resource: "${getSitename()}"
       lock(resource: "${projectName()}", inversePrecedence: true)
     // timeout after 1 hours
       timeout(time: 1, unit: 'HOURS')
     // keep 7 jobs
       buildDiscarder(logRotator(numToKeepStr: '7'))
+      skipDefaultCheckout()
   }
   stages {
-    stage("Setup") {
-        when {
-              not { branch 'master' }
-        }
+    stage("Checkout") {
       steps {
-          xenoBuildPantheon( "${projectName()}", "${getSitename()}")
+      milestone(2)
+          checkout scm
+      }
+    }
+
+    stage("Setup") {
+      when {
+        // Only build if the site is new
+        expression {
+          return !fileExists("/var/www/${getSitename()}/web/sites/default/settings.local.php")
+        }
+      }
+      steps {
+        milestone(5)
+          xenoBuildD8( "${getSitename()}", env.X_DB_BACKUP, env.X_DB_USER, env.X_LIVE_DOMAIN, "${getLabel()}")
+          echo "Build Drush Start"
           sh """
+              mkdir -p web/sites/default/files
+              cd web
+              drush config-set stage_file_proxy.settings origin \"${env.X_LIVE_DOMAIN}\"
+            """
+        }
+    }
+    stage("Drupal") {
+      steps {
+          sh """
+          composer install
           terminus connection:set ${projectName()}.${getSitename()} sftp
           terminus remote:drush ${projectName()}.${getSitename()} -- updb -y
           terminus remote:drush ${projectName()}.${getSitename()} -- cim -y
           """
       }
     }
-    // stage('Behat') {
-    //   when {
-    //     expression { env.CHANGE_TARGET == 'master' }
-    //   }
-    //   steps {
-    //     echo 'Behat Check'
-    //     // behatPantheon("${projectName()}", "${getSitename()}")
-    //   }
-    // }
+    stage("Tests") {
+        when {
+              not { branch 'jenkins' }
+        }
+        failFast true
+        parallel {
+            // stage('Behat') {
+            //   steps {
+            //   // behatD7("${getSitename()}") The site name to update the Bahat scripts with.
+            //     behatD7web("${getSitename()}")
+            //   }
+            // }
+            stage('PHPcs') {
+              steps {
+              // phpcs("Druapal|Wordpress", sitename, codePath, ignorePath)
+                phpcs("Drupal", "${getSitename()}", "${X_CODE}", "${X_IGNORE}")
+              }
+            }
+
+        }
+    }
     stage ('Deploy Code') {
         when {
             branch 'master'
         }
         steps {
-          script {
-            slackNotify("${X_SLACK_NOTIFY}\nChanges going live, this process can take up to 10 min based on the queue.\nhttps://live-${projectName()}.pantheonsite.io\nCompletion can be find in #jenkins-ci", "${X_SLACK_CHANNEL}", 'good', "${X_SLACK_NOTIFY}", "${getSlackname()}")
-          }
+        milestone(25)
+          slackNotify("${X_SLACK_NOTIFY}\nNo deploy configured. https://${getSitename()}.xenostaging.com", "${X_SLACK_CHANNEL}", 'good', "${X_SLACK_NOTIFY}", "${getSlackname()}")
+          // slackNotify("${X_SLACK_NOTIFY}\nReady to review and deploy. https://${getSitename()}.xenostaging.com", "${X_SLACK_CHANNEL}", 'good', "${X_SLACK_NOTIFY}", "${getSlackname()}")
+          // script {
+          //   timeout(time:4, unit:'DAYS') { // expires in 4 days
+          //       env.RELEASE_SCOPE = input message: 'Deploy to Production?', ok: 'Release!', submitterParameter: 'APPROVER'
+          //   } // end timeout
+          //   slackNotify("approved by ${env.RELEASE_SCOPE} and deploy started", "${X_SLACK_CHANNEL}", 'good', "${X_SLACK_NOTIFY}", "${getSlackname()}")
+          // }
         }
     }
   }
   post {
     success {
-       slackNotify("Build Compete. https://${getSitename()}-${projectName()}.pantheonsite.io", "${X_SLACK_CHANNEL}", 'good', "${X_SLACK_NOTIFY}", "${getSlackname()}")
+       slackNotify("Build Compete. https://${getSitename()}.xenostaging.com", "${X_SLACK_CHANNEL}", 'good', "${X_SLACK_NOTIFY}", "${getSlackname()}")
     }
     failure {
-       slackNotify("${X_SLACK_NOTIFY}\nBuild Failed. https://${getSitename()}-${projectName()}.pantheonsite.io", "${X_SLACK_CHANNEL}", 'danger', "${X_SLACK_NOTIFY}", "${getSlackname()}")
+       slackNotify("${X_SLACK_NOTIFY}\nBuild Failed. https://${getSitename()}.xenostaging.com", "${X_SLACK_CHANNEL}", 'danger', "${X_SLACK_NOTIFY}", "${getSlackname()}")
     }
     unstable {
-       slackNotify("${X_SLACK_NOTIFY}\nBuild is unstable. https://${getSitename()}-${projectName()}.pantheonsite.io", "${X_SLACK_CHANNEL}", 'warning', "${X_SLACK_NOTIFY}", "${getSlackname()}")
+       slackNotify("${X_SLACK_NOTIFY}\nBuild is unstable. https://${getSitename()}.xenostaging.com", "${X_SLACK_CHANNEL}", 'warning', "${X_SLACK_NOTIFY}", "${getSlackname()}")
     }
   }
 }
