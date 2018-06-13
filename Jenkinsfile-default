@@ -53,7 +53,8 @@ pipeline {
     // do not run more than one build per branch
       disableConcurrentBuilds()
     // lock based on branch name, pull requests use branch name
-      lock(resource: "${projectName()}", inversePrecedence: true)
+      // lock resource: "${getSitename()}"
+      lock(resource: "SITENAME", inversePrecedence: true)
     // timeout after 1 hours
       timeout(time: 1, unit: 'HOURS')
     // keep 7 jobs
