@@ -1,9 +1,16 @@
+version: 0.3.0
 site:
   grunt_path: # Leave blank if no grunt.
   root_path: web/
 pantheon:
   site_name:
   env: live
+stage:
+  site_name: sgf
+  user: git
+  host: ww5.xenostaging.com
+  port: 2222
+  backup_location: /var/livedb
 database:
   database: drupal
   user: drupal
