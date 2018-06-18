@@ -92,11 +92,9 @@ pipeline {
       steps {
           sh """
           composer install
-            cd /var/www/${getSitename()}/web/
-            drush cr -y
-            drush updb -y
-            drush cim -y
-            drush cr -y
+          terminus connection:set ${projectName()}.${getSitename()} sftp
+          terminus remote:drush ${projectName()}.${getSitename()} -- updb -y
+          terminus remote:drush ${projectName()}.${getSitename()} -- cim -y
           """
       }
     }
