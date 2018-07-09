@@ -3,13 +3,17 @@
   "description": "Install drops-8 with Composer on Pantheon.",
   "type": "project",
   "license": "MIT",
-  "repositories": [
-    {
+  "repositories": {
+    "0": {
       "type": "composer",
       "url": "https://packages.drupal.org/8"
+    },
+    "1": {
+      "type": "composer",
+      "url": "https://asset-packagist.org"
     }
-  ],
-    "require": {
+  },
+  "require": {
     "composer/installers": "^1.0.20",
     "cweagans/composer-patches": "^1.0",
     "drupal-composer/drupal-scaffold": "^2.0.1",
@@ -71,6 +75,11 @@
   "extra": {
     "installer-paths": {
       "web/core": ["type:drupal-core"],
+      "web/libraries/{$name}": [
+        "type:drupal-library",
+        "type:bower-asset",
+        "type:npm-asset"
+      ],
       "web/modules/contrib/{$name}": ["type:drupal-module"],
       "web/profiles/contrib/{$name}": ["type:drupal-profile"],
       "web/themes/contrib/{$name}": ["type:drupal-theme"],
