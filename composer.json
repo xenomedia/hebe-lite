@@ -24,7 +24,8 @@
     "drupal/simple_block": "^1.0@beta",
     "drush/drush": "~8",
     "rvtraveller/qs-composer-installer": "^1.1",
-    "webflo/drupal-core-strict": "^8"
+    "webflo/drupal-core-strict": "^8",
+    "oomphinc/composer-installers-extender": "^1.1"
   },
   "require-dev": {
     "mikey179/vfsstream": "^1.2",
@@ -73,6 +74,10 @@
     ]
   },
   "extra": {
+    "installer-types": [
+      "bower-asset",
+      "npm-asset"
+    ],
     "installer-paths": {
       "web/core": ["type:drupal-core"],
       "web/libraries/{$name}": [
