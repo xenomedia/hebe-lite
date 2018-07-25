@@ -17,7 +17,7 @@ $ git commit -m "web and vendor directory from composer install"
 $ git remote add origin ssh://ID@ID.drush.in:2222/~/repository.git
 $ git push --force origin master
 ```
-Replace my-site with the name that you gave your Pantheon site, and replace ssh://ID@ID.drush.in:2222/~/repository.git with the URL from the middle of the SSH clone URL from the Connection Info popup dialog on your dashboard.
+* The `--team` flag is optional and refers to a Pantheon organization. Pantheon organizations are often web development agencies or Universities. Setting this parameter causes the newly created site to go within the given organization. Run the Terminus command `terminus org:list` to see the organizations you are a member of. There might not be any.
 
 ## Important files and directories
 
@@ -39,8 +39,5 @@ So that CircleCI will have some test to run, this repository includes a configur
 
 ## Updating your site
 
-When using this repository to manage your Drupal site, you will no longer use the Pantheon dashboard to update your Drupal version. Instead, you will manage your updates using Composer. Updates can be applied either directly on Pantheon, by using Terminus, or on your local machine.
 
-#### Update on your local machine
 
-You may also place your site in Git mode, clone it locally, and then run composer commands from there.  Commit and push your files back up to Pantheon as usual.
