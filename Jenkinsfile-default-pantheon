@@ -3,7 +3,7 @@
 @Library('XENO_JENKINS') _
 def getLabel() {
     // Which server to run this on.
-    return "php[5,7][a-d]"
+    return "php[5,7,71][a-d]"
 }
 
 def projectName() {
@@ -14,10 +14,10 @@ def projectName() {
 def getSitename() {
     // Set the project name, most likely the git repo name.
     if (env.CHANGE_BRANCH && !env.CHANGE_FORK){
-        return "${env.CHANGE_BRANCH.toLowerCase()}"
+        return "${projectName()}-${env.CHANGE_BRANCH.toLowerCase()}"
     }
     else{
-        return "${env.BRANCH_NAME.toLowerCase()}"
+        return "${projectName()}-${env.BRANCH_NAME.toLowerCase()}"
     }
 }
 
@@ -125,8 +125,8 @@ pipeline {
         }
         steps {
         milestone(25)
-          slackNotify("${X_SLACK_NOTIFY}\nNo deploy configured. https://${getSitename()}.xenostaging.com", "${X_SLACK_CHANNEL}", 'good', "${X_SLACK_NOTIFY}", "${getSlackname()}")
-          // slackNotify("${X_SLACK_NOTIFY}\nReady to review and deploy. https://${getSitename()}.xenostaging.com", "${X_SLACK_CHANNEL}", 'good', "${X_SLACK_NOTIFY}", "${getSlackname()}")
+          slackNotify("No deploy configured. https://${getSitename()}.xenostaging.com", "${X_SLACK_CHANNEL}", 'good', "${X_SLACK_NOTIFY}", "${getSlackname()}")
+          // slackNotify("Ready to review and deploy. https://${getSitename()}.xenostaging.com", "${X_SLACK_CHANNEL}", 'good', "${X_SLACK_NOTIFY}", "${getSlackname()}")
           // script {
           //   timeout(time:4, unit:'DAYS') { // expires in 4 days
           //       env.RELEASE_SCOPE = input message: 'Deploy to Production?', ok: 'Release!', submitterParameter: 'APPROVER'
@@ -141,10 +141,10 @@ pipeline {
        slackNotify("Build Compete. https://${getSitename()}.xenostaging.com", "${X_SLACK_CHANNEL}", 'good', "${X_SLACK_NOTIFY}", "${getSlackname()}")
     }
     failure {
-       slackNotify("${X_SLACK_NOTIFY}\nBuild Failed. https://${getSitename()}.xenostaging.com", "${X_SLACK_CHANNEL}", 'danger', "${X_SLACK_NOTIFY}", "${getSlackname()}")
+       slackNotify("Build Failed. https://${getSitename()}.xenostaging.com", "${X_SLACK_CHANNEL}", 'danger', "${X_SLACK_NOTIFY}", "${getSlackname()}")
     }
     unstable {
-       slackNotify("${X_SLACK_NOTIFY}\nBuild is unstable. https://${getSitename()}.xenostaging.com", "${X_SLACK_CHANNEL}", 'warning', "${X_SLACK_NOTIFY}", "${getSlackname()}")
+       slackNotify("Build is unstable. https://${getSitename()}.xenostaging.com", "${X_SLACK_CHANNEL}", 'warning', "${X_SLACK_NOTIFY}", "${getSlackname()}")
     }
   }
 }
