@@ -12,13 +12,21 @@ def projectName() {
 
 // Choose the site name based on git name and if it is a Pull Request or branch.
 def getSitename() {
-    // Set the project name, most likely the git repo name.
-    if (env.CHANGE_BRANCH && !env.CHANGE_FORK){
-        return "${projectName()}-${env.CHANGE_BRANCH.toLowerCase()}"
-    }
-    else{
-        return "${projectName()}-${env.BRANCH_NAME.toLowerCase()}"
-    }
+  // If xupdates branch we build on our staging servers.
+  if (env.BRANCH_NAME == 'xupdates') {
+    PREFIX = "${projectName()}-"
+  }
+  else {
+    PREFIX = ''
+  }
+
+  // Set the project name, most likely the git repo name.
+  if (env.CHANGE_BRANCH && !env.CHANGE_FORK){
+      return "${PREFIX}${env.CHANGE_BRANCH.toLowerCase()}"
+  }
+  else{
+      return "${PREFIX}${env.BRANCH_NAME.toLowerCase()}"
+  }
 }
 
 def getSlackname() {
@@ -27,6 +35,19 @@ def getSlackname() {
           returnStdout: true
     ).trim()
 }
+
+/**
+ * Get custom workspace path.
+ */
+def getCustomworkspace() {
+  if (env.BRANCH_NAME == 'xupdates') {
+    return "/var/www/${getSitename()}"
+  }
+  else {
+    return "/var/build/${projectName()}-${getSitename()}"
+  }
+}
+
 pipeline {
   environment {
     // Database backup name
@@ -47,7 +68,7 @@ pipeline {
   agent {
     node {
       label "${getLabel()}"
-      customWorkspace "/var/www/${getSitename()}"
+      customWorkspace "${getCustomworkspace()}"
     }
   }
   options {
@@ -72,32 +93,47 @@ pipeline {
 
     stage("Setup") {
       when {
-        // Only build if the site is new
-        expression {
-          return !fileExists("/var/www/${getSitename()}/web/sites/default/settings.local.php")
+        not {
+          anyOf {
+            branch 'master'
+            branch 'xupdates'
+            expression {
+              return !fileExists("/var/www/${getSitename()}/web/sites/default/settings.local.php")
+            }
+          }
         }
       }
       steps {
         milestone(5)
-          xenoBuildD8( "${getSitename()}", env.X_DB_BACKUP, env.X_DB_USER, env.X_LIVE_DOMAIN, "${getLabel()}")
-          echo "Build Drush Start"
+          xenoBuildPantheon( "${projectName()}", "${getSitename()}", "${getLabel()}")
           sh """
-              mkdir -p web/sites/default/files
-              cd web
-              drush config-set stage_file_proxy.settings origin \"${env.X_LIVE_DOMAIN}\"
-            """
-        }
-    }
-    stage("Drupal") {
-      steps {
-          sh """
-          composer install
           terminus connection:set ${projectName()}.${getSitename()} sftp
           terminus remote:drush ${projectName()}.${getSitename()} -- updb -y
+          terminus remote:drush ${projectName()}.${getSitename()} -- cc drush
           terminus remote:drush ${projectName()}.${getSitename()} -- cim -y
+          terminus remote:drush ${projectName()}.${getSitename()} -- cr
           """
+        }
+    }
+    stage('Updates') {
+      when {
+        branch 'xupdates'
+      }
+      steps {
+        xenoUpdateD8Pantheon( "${getSitename()}", env.X_DB_BACKUP, env.X_DB_USER, env.X_LIVE_DOMAIN, "${getLabel()}")
       }
     }
+    // @TODO Make this work but prevent it to run during initial creation.
+    // stage("Drupal") {
+    //   steps {
+    //       sh """
+    //       composer install
+    //       terminus connection:set ${projectName()}.${getSitename()} sftp
+    //       terminus remote:drush ${projectName()}.${getSitename()} -- updb -y
+    //       terminus remote:drush ${projectName()}.${getSitename()} -- cim -y
+    //       """
+    //   }
+    // }
     stage("Tests") {
         when {
               not { branch 'jenkins' }

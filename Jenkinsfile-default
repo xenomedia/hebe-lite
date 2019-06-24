@@ -100,6 +100,14 @@ pipeline {
           """
       }
     }
+    stage('Updates') {
+      when {
+        branch 'xupdates'
+      }
+      steps {
+        xenoUpdateD8NonPantheon( "${getSitename()}", env.X_DB_BACKUP, env.X_DB_USER, env.X_LIVE_DOMAIN, "${getLabel()}")
+      }
+    }
     stage("Tests") {
         when {
               not { branch 'jenkins' }
