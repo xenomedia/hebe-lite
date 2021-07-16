@@ -110,3 +110,4 @@ Thumbs.db
 # Docker #
 ##########
 docker-compose-dev.yml
+/.gitattributes

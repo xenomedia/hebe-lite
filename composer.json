@@ -14,32 +14,18 @@
       }
     },
     "require": {
-      "composer/installers": "^1.0.20",
-      "cweagans/composer-patches": "^1.0",
-      "drupal-composer/drupal-scaffold": "^2.0.1",
-      "drupal/config_direct_save": "^1.0",
-      "drupal/config_installer": "^1.0",
-      "drupal/console": "^1",
-      "drupal/core": "^8",
-      "drupal/simple_block": "^1.0@beta",
-      "drush/drush": "~8",
-      "rvtraveller/qs-composer-installer": "^1.1",
-      "drush-ops/behat-drush-endpoint": "^0.0.5",
-      "webflo/drupal-core-strict": "^8",
-      "oomphinc/composer-installers-extender": "^1.1"
+        "php": ">=7.3",
+        "composer/installers": "^1.9",
+        "cweagans/composer-patches": "^1.7",
+        "drupal/core-composer-scaffold": "^9.1",
+        "drupal/core-recommended": "^9.1",
+        "drush/drush": "^10.3",
+        "vlucas/phpdotenv": "^5.1",
+        "webflo/drupal-finder": "^1.2"
     },
     "require-dev": {
-      "mikey179/vfsstream": "^1.2",
-      "behat/behat": "3.*",
-      "behat/mink": "^1.7",
-      "behat/mink-extension": "^2.2",
-      "behat/mink-goutte-driver": "^1.2",
-      "jcalderonzumba/gastonjs": "^1.0.2",
-      "jcalderonzumba/mink-phantomjs-driver": "^0.3.1",
-      "drupal/drupal-extension": "^3.1",
-      "pantheon-systems/quicksilver-pushback": "~1",
-      "phpunit/phpunit": "^4.8",
-      "symfony/css-selector": "^2.8"
+        "drupal/core-dev": "^9.1",
+        "zaporylie/composer-drupal-optimizations": "^1.2"
     },
     "conflict": {
         "drupal/drupal": "*"
@@ -99,19 +85,9 @@
         "export-configuration": "drush config-export --yes"
       },
       "drupal-scaffold": {
-        "source": "https://raw.githubusercontent.com/pantheon-systems/drops-8/{version}/{path}",
-        "includes": [
-          "sites/default/default.services.pantheon.preproduction.yml",
-          "sites/default/settings.pantheon.php"
-        ],
-        "excludes": [
-          ".csslintrc",
-          ".editorconfig",
-          ".eslintignore",
-          ".eslintrc.json",
-          ".htaccess",
-          "web.config"
-        ]
+        "locations": {
+          "web-root": "web/"
+        }
       }
     },
     "config": {
